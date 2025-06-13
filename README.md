@@ -57,3 +57,11 @@ DB_NAME=_28ce80########
 ```bash
 bench restart
 ```
+----------------------------
+### For Docker Compose projects
+
+- remember to edit the compose file with the following, so that we could have the custom-queues running and recognized y frappe's `RQ-Worker-list`
+- inside `configurator` service in `command` block
+```bash
+bench set-config -gp workers '{"default": {"timeout": 500}, "long": {"timeout": 500}, "short": {"timeout": 500}, "email": {"timeout": 500}, "sms": {"timeout": 500}, "todo": {"timeout": 500}}'
+```
