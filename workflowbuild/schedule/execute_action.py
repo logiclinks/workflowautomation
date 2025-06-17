@@ -39,7 +39,8 @@ def check_trigger_event(workflow_actions, doc):
 
             if action_type == "Email":
                 logger.info("Action Email Start")
-                queue_email = Queue(name='home-frappe-frappe-bench:email', connection=redis_conn)
+                # queue_email = Queue(name='home-frappe-frappe-bench:email', connection=redis_conn)
+                queue_email = Queue(name='email', connection=redis_conn)
                 email_template = frappe.get_doc("Email Template", action.get("email_template"))
 
                 email_detail = {
@@ -76,7 +77,8 @@ def check_trigger_event(workflow_actions, doc):
 
             elif action_type == "SMS":
                 logger.info("Action SMS Start")
-                queue_sms = Queue(name='home-frappe-frappe-bench:sms', connection=redis_conn)
+                # queue_sms = Queue(name='home-frappe-frappe-bench:sms', connection=redis_conn)
+                queue_sms = Queue(name='sms', connection=redis_conn)
                 job = queue_sms.enqueue_in(
                     timedelta(seconds=int(execution_days)),
                     "workflowbuild.schedule.utils.sends_sms",
@@ -107,7 +109,8 @@ def check_trigger_event(workflow_actions, doc):
 
             elif action_type == "ToDO":
                 logger.info("Action ToDo Start")
-                queue_todo = Queue(name='home-frappe-frappe-bench:todo', connection=redis_conn)
+                # queue_todo = Queue(name='home-frappe-frappe-bench:todo', connection=redis_conn)
+                queue_todo = Queue(name='todo', connection=redis_conn)
                 job = queue_todo.enqueue_in(
                     timedelta(seconds=int(execution_days)),
                     "workflowbuild.schedule.utils.assign_task",
