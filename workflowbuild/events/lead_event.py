@@ -3,15 +3,12 @@ from workflowbuild.schedule.execute_action import check_trigger_event
 
 def after_save_all(doc, method):
     try:
-        workflow_name = doc.custom_workflow
         current_state = doc.status
         status_changed = doc.has_value_changed("status")
         # workflow_state
 
-        frappe.logger().info(f"Workflow name: {workflow_name}")
         frappe.logger().info(f"Current status: {current_state}, Status changed: {status_changed}")
 
-        print("Workflow name:", workflow_name)
         print("Current status:", current_state)
         print("Status changed:", status_changed)
 
