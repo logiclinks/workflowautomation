@@ -9,6 +9,8 @@ def after_save_all(doc, method):
         print("Current status:", current_state)
         print("Status changed:", status_changed)
 
+
+
         if status_changed:
             # DB-level filter to only get relevant Workflow Configuration
             workflow_data_list = frappe.get_all(

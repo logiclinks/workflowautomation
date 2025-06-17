@@ -19,7 +19,7 @@ def check_trigger_event(workflow_actions, doc):
     logger.info("Started check_trigger_event in path: %s", os.getcwd())
     try:
         """Cron job to check if any workflow event is triggered and act on the configured actions"""
-        print("Current Path",os.getcwd())
+        logger.info(f"Current Path: {os.getcwd()=}")
         
         redis_url = os.environ.get("REDIS_QUEUE")
         logger.info(f"{redis_url=}")
@@ -39,27 +39,39 @@ def check_trigger_event(workflow_actions, doc):
 
             if action_type == "Email":
                 logger.info("Action Email Start")
+
+                # directly pass the function
+                frappe.enqueue(test_function, queue='email', q=action_type)
+
+
                 # queue_email = Queue(name='home-frappe-frappe-bench:email', connection=redis_conn)
                 queue_email = Queue(name='email', connection=redis_conn)
                 email_template = frappe.get_doc("Email Template", action.get("email_template"))
+
+                logger.info(f'{queue_email=}')
+                logger.info(f'{email_template=}')
 
                 email_detail = {
                     "email_temp": email_template,
                     "email_id": doc.email_id,
                     "doc":doc
                 }
+                logger.info(f'{email_detail=}')
 
                 job = queue_email.enqueue_in(
                     timedelta(seconds=int(execution_days)),
                     "workflowbuild.schedule.utils.send_email",
                     args=[email_detail]
                 )
+                logger.info(f'{job=}')
+                
                 job_args_serializable = []
 
                 for arg in job.args:
                     try:
                         job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
                     except Exception as e:
+                        logger.error(f'{str(e)}', exc_info=True)
                         job_args_serializable.append(str(arg))
 
                 job_data = {
@@ -71,8 +83,11 @@ def check_trigger_event(workflow_actions, doc):
                     "arguments": json.dumps(job_args_serializable, indent=2),
                     "status": job.get_status()
                 }
+
+                logger.info(f"{job_data=}")
+
                 job_resp = create_scheduled_job(job_data)
-                print("Email Job Scheduled:", job_resp)
+                logger.info(f"Email Job Scheduled: {job_resp=}")
                 logger.info("Action Email Ended")
 
             elif action_type == "SMS":
@@ -105,7 +120,6 @@ def check_trigger_event(workflow_actions, doc):
                 logger.info("Action SMS Ended")
 
                 print("SMS Job Scheduled:", job_resp)
-
 
             elif action_type == "ToDO":
                 logger.info("Action ToDo Start")
@@ -144,3 +158,8 @@ def check_trigger_event(workflow_actions, doc):
     except Exception as error:
         logger.error(f"Error in check_trigger_event: {str(error)}", exc_info=True)
         return False
+
+
+def test_function(q):
+    frappe.log("\nTESTING THIS FUCNTION in queue: {q}")
+    return
