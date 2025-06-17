@@ -22,6 +22,8 @@ def check_trigger_event(workflow_actions, doc):
         print("Current Path",os.getcwd())
         
         redis_url = os.environ.get("REDIS_QUEUE")
+        logger.info(f"{redis_url=}")
+
         if not redis_url:
             logger.error("REDIS_QUEUE environment variable not set")
             return False
@@ -137,5 +139,5 @@ def check_trigger_event(workflow_actions, doc):
         return True
 
     except Exception as error:
-        print("Error in check_trigger_event:", error)
+        logger.error(f"Error in check_trigger_event: {str(error)}", exc_info=True)
         return False
