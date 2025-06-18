@@ -41,13 +41,13 @@ def check_trigger_event(workflow_actions, doc):
                 logger.info("Action Email Start")
 
                 # directly pass the function
-                frappe.enqueue(test_function, queue='email', q=action_type)
-
+                frappe_queue_email = frappe.enqueue(test_function, queue='home-frappe-frappe-bench:email', q=action_type)
 
                 # queue_email = Queue(name='home-frappe-frappe-bench:email', connection=redis_conn)
                 queue_email = Queue(name='email', connection=redis_conn)
                 email_template = frappe.get_doc("Email Template", action.get("email_template"))
 
+                logger.info(f'{frappe_queue_email=}')
                 logger.info(f'{queue_email=}')
                 logger.info(f'{email_template=}')
 
