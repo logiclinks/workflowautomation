@@ -21,15 +21,15 @@ def check_trigger_event(workflow_actions, doc):
         """Cron job to check if any workflow event is triggered and act on the configured actions"""
         logger.info(f"Current Path: {os.getcwd()=}")
         
-        redis_url = os.environ.get("REDIS_QUEUE")
-        logger.info(f"{redis_url=}")
+        # redis_url = os.environ.get("REDIS_QUEUE")
+        # logger.info(f"{redis_url=}")
 
-        if not redis_url:
-            logger.error("REDIS_QUEUE environment variable not set")
-            return False
+        # if not redis_url:
+        #     logger.error("REDIS_QUEUE environment variable not set")
+        #     return False
 
-        redis_conn = redis.from_url(redis_url)
-        logger.info("Connected to Redis at: %s", redis_url)
+        # redis_conn = redis.from_url(redis_url)
+        # logger.info("Connected to Redis at: %s", redis_url)
 
         for action in workflow_actions:
 
@@ -40,54 +40,54 @@ def check_trigger_event(workflow_actions, doc):
             if action_type == "Email":
                 logger.info("Action Email Start")
 
-                # directly pass the function
-                frappe_queue_email = frappe.enqueue(test_function, queue='email', q=action_type)
-
-                # queue_email = Queue(name='home-frappe-frappe-bench:email', connection=redis_conn)
-                queue_email = Queue(name='email', connection=redis_conn)
                 email_template = frappe.get_doc("Email Template", action.get("email_template"))
-
-                logger.info(f'{frappe_queue_email=}')
-                logger.info(f'{queue_email=}')
                 logger.info(f'{email_template=}')
+
 
                 email_detail = {
                     "email_temp": email_template,
                     "email_id": doc.email_id,
-                    "doc":doc
+                    "doc": doc
                 }
                 logger.info(f'{email_detail=}')
+                
 
-                job = queue_email.enqueue_in(
-                    timedelta(seconds=int(execution_days)),
-                    "workflowbuild.schedule.utils.send_email",
-                    args=[email_detail]
+                job = frappe.enqueue(
+                    'workflowbuild.schedule.utils.send_email',
+                    queue="email",
+                    is_async=True,
+                    job_name=f"Send Email to {doc.first_name} {doc.email_id}",
+                    enqueue_after=timedelta(seconds=int(execution_days)),
+                    email_detail=email_detail
                 )
+
+
                 logger.info(f'{job=}')
                 
-                job_args_serializable = []
+                # job_args_serializable = []
 
-                for arg in job.args:
-                    try:
-                        job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
-                    except Exception as e:
-                        logger.error(f'{str(e)}', exc_info=True)
-                        job_args_serializable.append(str(arg))
+                # for arg in job.args:
+                #     try:
+                #         job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
+                #     except Exception as e:
+                #         logger.error(f'{str(e)}', exc_info=True)
+                #         job_args_serializable.append(str(arg))
 
-                job_data = {
-                    "job_id": job.id,
-                    "job_name": job.func_name,  # Use job.func_name instead of private _func_name
-                    "timeout": job.timeout,
-                    "schedule_at": job.enqueued_at or None,
-                    "job_created": job.created_at,
-                    "arguments": json.dumps(job_args_serializable, indent=2),
-                    "status": job.get_status()
-                }
+                # job_data = {
+                #     "job_id": job.id,
+                #     "job_name": job.func_name,  # Use job.func_name instead of private _func_name
+                #     "timeout": job.timeout,
+                #     "schedule_at": job.enqueued_at or None,
+                #     "job_created": job.created_at,
+                #     "arguments": json.dumps(job_args_serializable, indent=2),
+                #     "status": job.get_status()
+                # }
 
-                logger.info(f"{job_data=}")
+                # logger.info(f"{job_data=}")
 
-                job_resp = create_scheduled_job(job_data)
-                logger.info(f"Email Job Scheduled: {job_resp=}")
+                # job_resp = create_scheduled_job(job_data)
+                # logger.info(f"Email Job Scheduled: {job_resp=}")
+
                 logger.info("Action Email Ended")
 
             elif action_type == "SMS":
