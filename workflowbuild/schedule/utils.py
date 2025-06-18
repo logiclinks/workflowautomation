@@ -11,19 +11,19 @@ from datetime import timedelta
 from frappe.core.doctype.sms_settings.sms_settings import send_sms
 import redis
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
-new_path = os.getenv("SITE_PATH")
-site_name = os.getenv("SITE_NAME")
-db_name = os.getenv("DB_NAME")
+# load_dotenv(os.path.join(os.path.dirname(__file__), '../../.env'))
+# new_path = os.getenv("SITE_PATH")
+# site_name = os.getenv("SITE_NAME")
+# db_name = os.getenv("DB_NAME")
 
-os.chdir(new_path)
+# os.chdir(new_path)
 
-frappe.init(site=os.path.join(new_path, site_name))
-frappe.connect(site=os.path.join(new_path, site_name), db_name=db_name)
+# frappe.init(site=os.path.join(new_path, site_name))
+# frappe.connect(site=os.path.join(new_path, site_name), db_name=db_name)
 
-redis_url = os.environ.get("REDIS_QUEUE")
+# redis_url = os.environ.get("REDIS_QUEUE")
         
-redis_conn = redis.from_url(redis_url)
+# redis_conn = redis.from_url(redis_url)
         
 def send_email(email_detail):
     """Send Email using provided email_template and log job status"""
