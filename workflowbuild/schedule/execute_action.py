@@ -63,16 +63,17 @@ def check_trigger_event(workflow_actions, doc):
 
 
                 logger.info(f'{job=}')
+                logger.info(f'{job.args=}')
                 
-                job_args_serializable = []
+                # job_args_serializable = []
 
-                for arg in job.args:
-                    try:
-                        logger.info(f"{arg=}\n")
-                        job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
-                    except Exception as e:
-                        logger.error(f'{str(e)}', exc_info=True)
-                        job_args_serializable.append(str(arg))
+                # for arg in job.args:
+                #     try:
+                #         logger.info(f"{arg=}\n")
+                #         job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
+                #     except Exception as e:
+                #         logger.error(f'{str(e)}', exc_info=True)
+                #         job_args_serializable.append(str(arg))
 
                 # job_data = {
                 #     "job_id": job.id,

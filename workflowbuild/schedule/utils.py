@@ -29,10 +29,10 @@ def send_email(email_detail):
     """Send Email using provided email_template and log job status"""
 
     started_at = now_datetime()
-    job_id = get_current_job().id if get_current_job() else None
+    # job_id = get_current_job().id if get_current_job() else None
 
     try:
-        print("Current job Id Email", get_current_job())
+        # print("Current job Id Email", get_current_job())
 
         doc = email_detail.get("doc")
         if not doc:
@@ -53,23 +53,23 @@ def send_email(email_detail):
             delayed=False
         )
 
-        print("Email sent to:", doc.email_id)
+        frappe.log(f"Email sent to: {doc.email_id}")
 
-        if job_id:
-            # redis_conn = Redis()
-            job = Job.fetch(job_id, connection=redis_conn)
-            status = job.get_status()
-            print("job.exc_info -- Email", job.exc_info)
+        # if job_id:
+        #     # redis_conn = Redis()
+        #     job = Job.fetch(job_id, connection=redis_conn)
+        #     status = job.get_status()
+        #     print("job.exc_info -- Email", job.exc_info)
 
-            if status == "failed":
-                update_scheduled_job(job_id, status, started_at, job.exc_info)
-            else:
-                update_scheduled_job(job_id, status, started_at)
+        #     if status == "failed":
+        #         update_scheduled_job(job_id, status, started_at, job.exc_info)
+        #     else:
+        #         update_scheduled_job(job_id, status, started_at)
 
     except Exception as error:
-        print("Error in Email Sending:", error)
-        if job_id:
-            update_scheduled_job(job_id, "failed", started_at, str(error))
+        frappe.log_error(frappe.get_traceback(), f"Error in Email Sending: {str(error)}" )
+        # if job_id:
+        #     update_scheduled_job(job_id, "failed", started_at, str(error))
 
     finally:
         frappe.destroy()
