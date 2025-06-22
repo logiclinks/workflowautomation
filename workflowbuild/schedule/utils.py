@@ -15,21 +15,22 @@ import redis
 # new_path = os.getenv("SITE_PATH")
 # site_name = os.getenv("SITE_NAME")
 # db_name = os.getenv("DB_NAME")
-
 # os.chdir(new_path)
-
 # frappe.init(site=os.path.join(new_path, site_name))
 # frappe.connect(site=os.path.join(new_path, site_name), db_name=db_name)
 
-# redis_url = os.environ.get("REDIS_QUEUE")
-        
-# redis_conn = redis.from_url(redis_url)
-        
+
+# change this in production
+
+# redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
+redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+redis_conn = redis.from_url(redis_url)
+
 def send_email(email_detail):
     """Send Email using provided email_template and log job status"""
 
     started_at = now_datetime()
-    # job_id = get_current_job().id if get_current_job() else None
+    job_id = get_current_job().id if get_current_job() else None
 
     try:
         # print("Current job Id Email", get_current_job())
@@ -52,62 +53,66 @@ def send_email(email_detail):
             message=message,
             delayed=False
         )
+        frappe.log(f"Email sent to: {doc.email_id}, JOB-ID: {job_id}")
 
-        frappe.log(f"Email sent to: {doc.email_id}")
+        if job_id:
+            job = Job.fetch(job_id, connection=redis_conn)
+            status = job.get_status()
+            print("job.exc_info -- Email", job.exc_info)
 
-        # if job_id:
-        #     # redis_conn = Redis()
-        #     job = Job.fetch(job_id, connection=redis_conn)
-        #     status = job.get_status()
-        #     print("job.exc_info -- Email", job.exc_info)
+            update_scheduled_job(job_id, 'finished', started_at)
 
-        #     if status == "failed":
-        #         update_scheduled_job(job_id, status, started_at, job.exc_info)
-        #     else:
-        #         update_scheduled_job(job_id, status, started_at)
+            # if status == "failed":
+            #     update_scheduled_job(job_id, status, started_at, job.exc_info)
+            # else:
+            #     update_scheduled_job(job_id, status, started_at)
 
     except Exception as error:
         frappe.log_error(frappe.get_traceback(), f"Error in Email Sending: {str(error)}" )
-        # if job_id:
-        #     update_scheduled_job(job_id, "failed", started_at, str(error))
+        if job_id:
+            update_scheduled_job(job_id, "failed", started_at, str(error))
 
     finally:
         frappe.destroy()
 
-def sends_sms(action, doc):
+def sends_sms_here(sms_detail):
     """Send SMS using provided sms_template and log job status"""
     
     started_at = now_datetime()
     job_id = get_current_job().id if get_current_job() else None
 
     try:
-        print("Current job Id SMS", get_current_job())
+        # print("Current job Id SMS", get_current_job())
         # Get job ID early to ensure it's available in exception block
 
-        if not action.sms_template or not doc.get('mobile_no'):
+        doc = sms_detail.get("doc")
+        sms_temp = sms_detail.get("sms_temp")
+
+        if not sms_temp or not doc.get('mobile_no'):
             raise ValueError("Missing mobile number or SMS template")
-        recipient = '+91' + str(doc.get('mobile_no'))
+
+        recipient = '+1' + str(doc.get('mobile_no'))
 
         # Render the SMS message template
-        message_template = frappe.db.get_value("SMS Template", action.sms_template, "template_text")
+        message_template = frappe.db.get_value("SMS Template", sms_temp, "template_text")
         if not message_template:
             raise ValueError("SMS template not found")
 
         message = frappe.render_template(message_template, doc)
-        
-        send_sms([recipient], message, sender_name="Logic Links")
+        send_sms([recipient], message, sender_name="LogicLinks.io")
+        print(f"\n\nSMS SENT on {doc.get('mobile_no')}")
 
         # Fetch job status and log it
         if job_id:
-            # redis_conn = Redis()
             job = Job.fetch(job_id, connection=redis_conn)
             status = job.get_status()
             print("job.exc_info -- SMS", job.exc_info)
+            update_scheduled_job(job_id, 'finished', started_at)
 
-            if status == "failed":
-                update_scheduled_job(job_id, status, started_at, job.exc_info)
-            else:
-                update_scheduled_job(job_id, status, started_at)
+            # if status == "failed":
+            #     update_scheduled_job(job_id, status, started_at, job.exc_info)
+            # else:
+            #     update_scheduled_job(job_id, status, started_at)
 
     except Exception as error:
         print("Error in SMS Sending:", error)
@@ -117,20 +122,18 @@ def sends_sms(action, doc):
     finally:
         frappe.destroy()
 
-def assign_task(action, doc):
+def assign_task(todo_detail):
     
     started_at = now_datetime()
     job_id = get_current_job().id if get_current_job() else None
 
     try:
-        print("Current job Id Todo", get_current_job())
-        print("User ---", action)
-
-        assigned_user = action.get('assigned_user') or doc.get('email_id')
+        action = todo_detail['action']
+        assigned_user = action['assigned_user']
         if not assigned_user:
             raise ValueError("Assigned user not found in action or document")
 
-        todo_temp = frappe.get_doc("ToDo Template", action.get('todo_template'))
+        todo_temp = todo_detail['todo_temp']
         if not todo_temp:
             raise ValueError("ToDo Template not found")
 
@@ -138,6 +141,8 @@ def assign_task(action, doc):
         due_in_seconds = todo_temp.get("due_date") or 0
         due_date = now_datetime() + timedelta(seconds=due_in_seconds)
 
+
+        doc = todo_detail['doc']
         todo = frappe.get_doc({
             "doctype": "ToDo",
             "description": description,
@@ -157,11 +162,12 @@ def assign_task(action, doc):
             job = Job.fetch(job_id, connection=redis_conn)
             status = job.get_status()
             print("job.exc_info -- TODO", job.exc_info)
+            update_scheduled_job(job_id, 'finished', started_at)
 
-            if status == "failed":
-                update_scheduled_job(job_id, status, started_at, job.exc_info)
-            else:
-                update_scheduled_job(job_id, status, started_at)
+            # if status == "failed":
+            #     update_scheduled_job(job_id, status, started_at, job.exc_info)
+            # else:
+            #     update_scheduled_job(job_id, status, started_at)
 
     except Exception as error:
         print("Error in ToDo Assignment:", error)

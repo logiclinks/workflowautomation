@@ -33,7 +33,6 @@ def create_scheduled_job(job_data):
         print("Error creating Scheduled Job:", e)
         return None
 
-
 def update_scheduled_job(job_id, status=None, started_at=None, error_msg=None):
     
     try:
@@ -56,6 +55,7 @@ def update_scheduled_job(job_id, status=None, started_at=None, error_msg=None):
         frappe.log_error(frappe.get_traceback(), "Scheduled Job Update Error")
         print(f"Error updating Scheduled Job '{job_id}':", e)
 
+
 # @frappe.whitelist(allow_guest=True)
 def refresh_job():
     try:
@@ -66,7 +66,12 @@ def refresh_job():
             fields=["name", "job_id", "status"],
             filters={"status": ["not in", ["finished", "failed", "canceled"]]}
         )
-        redis_url = "redis://redis-queue:6379"
+
+        # change this in production
+        # redis_url = "redis://redis-queue:6379"
+        # redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
+        redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+        
         if not redis_url:
             print("REDIS_QUEUE environment variable not set")
             return False
@@ -78,29 +83,32 @@ def refresh_job():
             status = job_meta.status
 
             try:
-                
                 job = Job.fetch(job_id, connection=redis_conn)
                 status = job.get_status()
-
-                #  check if job id exits
-                print("\n AFTER FETCHED \n") 
-                print(f"Job ID: {job_id}, Status: {status}")
-
-
                 started_at = job.started_at
                 ended_at = job.ended_at
 
+                if not job.ended_at:
+                    job.ended_at = job.started_at
+
+                    duration = int(round((job.ended_at - job.started_at).total_seconds()))
+                    
+                    # Now assign to the Duration field
+                    job_doc.time_taken = duration
+                    
+                    job_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
+
 
                 if job_meta.status != status:
+
                     job_doc = frappe.get_doc("Scheduled  Job", job_meta.name)
                     job_doc.status = status
-
 
                     if started_at:
                         job_doc.started_at = started_at
                     if ended_at:
                         job_doc.ended_at = ended_at
-
 
                     if started_at and ended_at:
                         duration = round((ended_at - started_at).total_seconds())
@@ -109,7 +117,6 @@ def refresh_job():
                         duration = int(round((ended_at - started_at).total_seconds()))
                         # Now assign to the Duration field
                         job_doc.time_taken = duration
-                        
 
                     job_doc.save(ignore_permissions=True)
                     frappe.db.commit()
@@ -119,14 +126,3 @@ def refresh_job():
 
     except Exception as e:
         print("Error in refresh_job:", e)
-
-
-def check_cron_job():
-    try:
-        print("Check Cron Job Active")
-        frappe.logger().info("Scheduled task ran.")
-        print("Check Cron Job DONE")
-        
-
-    except Exception as e:
-        print("Error in check_cron_job:", e)

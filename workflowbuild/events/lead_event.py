@@ -6,10 +6,9 @@ def after_save_all(doc, method):
         current_state = doc.status
         status_changed = doc.has_value_changed("status")
         frappe.log(f"Current status: {current_state}\nStatus changed: {status_changed}\n")
-        print("Current status:", current_state)
+
+        print("\n\nCurrent status:", current_state)
         print("Status changed:", status_changed)
-
-
 
         if status_changed:
             # DB-level filter to only get relevant Workflow Configuration
@@ -42,10 +41,10 @@ def after_save_all(doc, method):
                     frappe.log_error(frappe.get_traceback(), "Trigger Event API Error: " + str(e))
             else:
                 frappe.log("No matching Workflow Configuration found for current status.")
-                print("No matching Workflow Configuration found for current status.")
+                print("No matching Workflow Configuration found for current status.\n\n")
         else:
             frappe.log("Workflow name or status change not detected.")
-            print("Workflow name or status change not detected.")
+            print("Workflow name or status change not detected.\n\n")
 
     except Exception as main_e:
         frappe.log_error(frappe.get_traceback(), "Error: " + str(main_e))

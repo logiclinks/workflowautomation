@@ -1,5 +1,7 @@
 import frappe
-from datetime import timedelta
+from frappe.model.document import Document 
+
+from datetime import timedelta, datetime
 from rq import Queue
 from redis import Redis
 import redis
@@ -8,6 +10,8 @@ import os
 import json
 from .logs import create_scheduled_job
 import logging
+from .delayed_tasks import backgroundScheduler, enqueue_email_job, enqueue_sms_job, enqueue_todo_job
+from .utils import send_email
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,144 +19,97 @@ logger.addHandler(logging.StreamHandler())  # Optional: only for dev or Docker l
 
 
 def check_trigger_event(workflow_actions, doc):
-    print("start path",os.getcwd())
+    print("\nStart path",os.getcwd())
     logger.info("Started check_trigger_event in path: %s", os.getcwd())
+    
     try:
         """Cron job to check if any workflow event is triggered and act on the configured actions"""
         logger.info(f"Current Path: {os.getcwd()=}")
         
-        # redis_url = os.environ.get("REDIS_QUEUE")
-        # logger.info(f"{redis_url=}")
+        # change this in production
+        # redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
+        redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+        logger.info(f"{redis_url=}")
 
-        # if not redis_url:
-        #     logger.error("REDIS_QUEUE environment variable not set")
-        #     return False
+        if not redis_url:
+            logger.error("REDIS_QUEUE environment variable not set")
+            return False
 
-        # redis_conn = redis.from_url(redis_url)
-        # logger.info("Connected to Redis at: %s", redis_url)
+        redis_conn = redis.from_url(redis_url)
+        logger.info("Connected to Redis at: %s", redis_url)
 
         for action in workflow_actions:
 
             action_type = action.get('action_type')  # Email, SMS, ToDo
             execution_days = int(action.get('execution_time') or 0)
-            logger.info("Processing action: %s", action_type)
+
+            job_creation_time = datetime.now()
+            time_delay = timedelta(seconds=execution_days)
+            schedule_time = job_creation_time + time_delay # Calculate the exact future time
+
+            logger.info(f"Processing Action {action_type} Start")
 
             if action_type == "Email":
-                logger.info("Action Email Start")
-
                 email_template = frappe.get_doc("Email Template", action.get("email_template"))
-                logger.info(f'{email_template=}')
-
-
                 email_detail = {
                     "email_temp": email_template,
                     "email_id": doc.email_id,
                     "doc": doc
                 }
-                logger.info(f'{email_detail=}')
-
-
-                job = frappe.enqueue(
-                    'workflowbuild.schedule.utils.send_email',
-                    queue="email",
-                    is_async=True,
-                    job_name=f"Send Email to {doc.first_name} {doc.email_id}",
-                    enqueue_after=timedelta(seconds=int(execution_days)),
-                    email_detail=email_detail
+                email_job = backgroundScheduler.add_job(
+                    enqueue_email_job,
+                    'date',
+                    run_date=schedule_time,
+                    args=[job_creation_time, schedule_time, email_detail],
+                    id=f"Send-Email_{doc.name}_{datetime.now().timestamp()}",
+                    misfire_grace_time=60
                 )
-
-
-                logger.info(f'{job=}')
-                logger.info(f'{job.args=}')
-                
-                # job_args_serializable = []
-
-                # for arg in job.args:
-                #     try:
-                #         logger.info(f"{arg=}\n")
-                #         job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
-                #     except Exception as e:
-                #         logger.error(f'{str(e)}', exc_info=True)
-                #         job_args_serializable.append(str(arg))
-
-                # job_data = {
-                #     "job_id": job.id,
-                #     "job_name": job.func_name,  # Use job.func_name instead of private _func_name
-                #     "timeout": job.timeout,
-                #     "schedule_at": job.enqueued_at or None,
-                #     "job_created": job.created_at,
-                #     "arguments": json.dumps(job_args_serializable, indent=2),
-                #     "status": job.get_status()
-                # }
-
-                # logger.info(f"{job_data=}")
-
-                # job_resp = create_scheduled_job(job_data)
-                # logger.info(f"Email Job Scheduled: {job_resp=}")
-
-                logger.info("Action Email Ended")
+                # create_scheduled_job(job_data) # Log this APScheduler job
+                logger.info(f"Email Job Scheduled with APScheduler: {email_job.id}, will run at {schedule_time}")
+                logger.info("Action Email Ended (APScheduler)\n\n")
+                # -----------------------------------------------
 
             elif action_type == "SMS":
-                logger.info("Action SMS Start")
-                # queue_sms = Queue(name='home-frappe-frappe-bench:sms', connection=redis_conn)
-                queue_sms = Queue(name='sms', connection=redis_conn)
-                job = queue_sms.enqueue_in(
-                    timedelta(seconds=int(execution_days)),
-                    "workflowbuild.schedule.utils.sends_sms",
-                    args=[action,doc]
-                )
-
-                job_args_serializable = []
-                for arg in job.args:
-                    try:
-                        job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
-                    except Exception as e:
-                        job_args_serializable.append(str(arg))
-
-                job_data = {
-                    "job_id": job.id,
-                    "job_name": job.func_name,
-                    "timeout": job.timeout,
-                    "schedule_at": job.enqueued_at or None,
-                    "job_created": job.created_at,
-                    "arguments": json.dumps(job_args_serializable, indent=2),
-                    "status": job.get_status()
+                sms_template = frappe.get_doc("SMS Template", action.get("sms_template"))
+                sms_detail = {
+                    "sms_temp": sms_template,
+                    "mobile_no": doc.mobile_no,
+                    "doc": doc
                 }
-                job_resp = create_scheduled_job(job_data)
-                logger.info("Action SMS Ended")
-
-                print("SMS Job Scheduled:", job_resp)
+                sms_job = backgroundScheduler.add_job(
+                    enqueue_sms_job,
+                    'date',
+                    run_date=schedule_time,
+                    args=[job_creation_time, schedule_time, sms_detail],
+                    id=f"Send-SMS_{doc.name}_{datetime.now().timestamp()}",
+                    misfire_grace_time=60
+                )
+                # create_scheduled_job(job_data) # Log this APScheduler job
+                logger.info(f"SMS Job Scheduled with APScheduler: {sms_job.id}, will run at {schedule_time}")
+                logger.info("Action SMS Ended (APScheduler)\n\n")
+                # -----------------------------------------------
 
             elif action_type == "ToDO":
-                logger.info("Action ToDo Start")
-                # queue_todo = Queue(name='home-frappe-frappe-bench:todo', connection=redis_conn)
-                queue_todo = Queue(name='todo', connection=redis_conn)
-                job = queue_todo.enqueue_in(
-                    timedelta(seconds=int(execution_days)),
-                    "workflowbuild.schedule.utils.assign_task",
-                    args=[action, doc]
-                )
-                job_args_serializable = []
-
-                for arg in job.args:
-                    try:
-                        job_args_serializable.append(json.loads(json.dumps(arg, default=str)))
-                    except Exception as e:
-                        job_args_serializable.append(str(arg))
-
-                job_data = {
-                    "job_id": job.id,
-                    "job_name": job.func_name,
-                    "timeout": job.timeout,
-                    "schedule_at": job.enqueued_at or None,
-                    "job_created": job.created_at,
-                    "arguments": json.dumps(job_args_serializable, indent=2),
-                    "status": job.get_status()
-                }
-                job_resp = create_scheduled_job(job_data)
-                print("ToDo Job Scheduled:", job_resp)
-                logger.info("Action ToDo Ended")
                 
+                todo_template = frappe.get_doc("ToDo Template", action.get("todo_template"))
+                todo_detail = {
+                    "todo_temp": todo_template,
+                    "action": action,
+                    "doc": doc
+                }
+                todo_job = backgroundScheduler.add_job(
+                    enqueue_todo_job,
+                    'date',
+                    run_date=schedule_time,
+                    args=[job_creation_time, schedule_time, todo_detail],
+                    id=f"Send-ToDo_{doc.name}_{datetime.now().timestamp()}",
+                    misfire_grace_time=60
+                )
+                # create_scheduled_job(job_data) # Log this APScheduler job
+                logger.info(f"TODO Job Scheduled with APScheduler: {todo_job.id}, will run at {schedule_time}")
+                logger.info("Action TODO Ended (APScheduler)\n\n")
+                # -----------------------------------------------
+
         logger.info("Completed check_trigger_event")
 
         return True
@@ -160,8 +117,3 @@ def check_trigger_event(workflow_actions, doc):
     except Exception as error:
         logger.error(f"Error in check_trigger_event: {str(error)}", exc_info=True)
         return False
-
-
-def test_function(q):
-    frappe.log("\nTESTING THIS FUCNTION in queue: {q}")
-    return
