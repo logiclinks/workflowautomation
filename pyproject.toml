@@ -1,7 +1,9 @@
 [project]
 name = "workflowbuild"
 authors = [
-    { name = "Mradul Mishra", email = "mishramradul29@gmail.com"}
+    { name = "Mradul Mishra", email = "mishramradul29@gmail.com"},
+    { name = "Shubhamm Mohitte", email = "mohite.shubhu61@gmail.com"},
+
 ]
 description = "WorkFlow Builder"
 requires-python = ">=3.10"
@@ -11,7 +13,8 @@ dependencies = [
     # "frappe~=15.0.0" # Installed and managed by bench.
     "rq",
     "python-dotenv",
-    "APScheduler"
+    "APScheduler".
+    "sqlalchemy"
 ]
 
 [build-system]

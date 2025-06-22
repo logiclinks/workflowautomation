@@ -1,8 +1,8 @@
 app_name = "workflowbuild"
 app_title = "Workflowbuild"
-app_publisher = "Mradul Mishra"
+app_publisher = "Mradul Mishra, Shubhamm Mohitte"
 app_description = "WorkFlow Builder"
-app_email = "mishramradul29@gmail.com"
+app_email = "mishramradul29@gmail.com, mohite.shubhu61@gmail.com"
 app_license = "mit"
 
 # Apps
@@ -13,9 +13,6 @@ scheduler_events = {
     "cron": {
         "0/1 * * * *": [  # every 1 minute
           "workflowbuild.schedule.logs.refresh_job"  # function to execute
-        ],
-        "0/2 * * * *": [  # every 1 minute
-          "workflowbuild.schedule.logs.check_cron_job"  # function to execute
         ]
     }
 }

@@ -4,10 +4,20 @@ from frappe.model.document import Document
 
 import json, os, logging
 from datetime import timedelta, datetime
-from apscheduler.schedulers.background import BackgroundScheduler
+
 from .logs import create_scheduled_job
 
-backgroundScheduler = BackgroundScheduler()
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.memory import MemoryJobStore
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+
+# Define job stores
+jobstores = {
+    'default': MemoryJobStore(),  # In-memory store (no persistence)
+    'persistent': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')  # SQLite-based persistent store
+}
+# Create scheduler with job stores configuration
+backgroundScheduler = BackgroundScheduler(jobstores=jobstores)
 backgroundScheduler.start()
 
 
@@ -33,8 +43,9 @@ class FrappeJobEncoder(json.JSONEncoder):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)
 
-def enqueue_email_job(job_creation_time, schedule_time, email_detail):
-    SITE_NAME="logic.localhost"
+def enqueue_email_job(job_creation_time, schedule_time, email_detail, _job_name, _job_enq_id):
+    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
+    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
 
     try:
         frappe.init(site=SITE_NAME)
@@ -52,7 +63,8 @@ def enqueue_email_job(job_creation_time, schedule_time, email_detail):
         'workflowbuild.schedule.utils.send_email',
         queue="email",
         is_async=True,
-        job_name=f"Send Email to {email_detail['doc']['first_name']} {email_detail['doc']['email_id']}",
+        job_id=_job_enq_id,
+        job_name=_job_name,
         email_detail=email_detail
     )
     
@@ -66,7 +78,7 @@ def enqueue_email_job(job_creation_time, schedule_time, email_detail):
         job_kwargs_serializable = str(job.kwargs)
 
     job_data = {
-        "job_id": job.id,
+        "job_id": _job_enq_id,
         "job_name": job.func_name, # This will be 'workflowbuild.schedule.utils.send_email'
         "timeout": job.timeout,
         "job_created": job_creation_time, # Ensure datetime is serialized
@@ -78,8 +90,9 @@ def enqueue_email_job(job_creation_time, schedule_time, email_detail):
 
     return
 
-def enqueue_sms_job(job_creation_time, schedule_time, sms_detail):
-    SITE_NAME="logic.localhost"
+def enqueue_sms_job(job_creation_time, schedule_time, sms_detail, _job_name, _job_enq_id):
+    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
+    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
 
     try:
         frappe.init(site=SITE_NAME)
@@ -97,7 +110,8 @@ def enqueue_sms_job(job_creation_time, schedule_time, sms_detail):
         'workflowbuild.schedule.utils.sends_sms_here',
         queue="sms",
         is_async=True,
-        job_name=f"Send SMS to {sms_detail['doc']['first_name']} {sms_detail['doc']['mobile_no']}",
+        job_id=_job_enq_id,
+        job_name=_job_name,
         sms_detail=sms_detail
     )
     
@@ -111,7 +125,7 @@ def enqueue_sms_job(job_creation_time, schedule_time, sms_detail):
         job_kwargs_serializable = str(job.kwargs)
 
     job_data = {
-        "job_id": job.id,
+        "job_id": _job_enq_id,
         "job_name": job.func_name, # This will be 'workflowbuild.schedule.utils.send_email'
         "timeout": job.timeout,
         "job_created": job_creation_time, # Ensure datetime is serialized
@@ -123,8 +137,9 @@ def enqueue_sms_job(job_creation_time, schedule_time, sms_detail):
 
     return
 
-def enqueue_todo_job(job_creation_time, schedule_time, todo_detail):
-    SITE_NAME="logic.localhost"
+def enqueue_todo_job(job_creation_time, schedule_time, todo_detail, _job_name, _job_enq_id):
+    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
+    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
 
     try:
         frappe.init(site=SITE_NAME)
@@ -143,7 +158,8 @@ def enqueue_todo_job(job_creation_time, schedule_time, todo_detail):
         'workflowbuild.schedule.utils.assign_task',
         queue="todo",
         is_async=True,
-        job_name=f"Send TODO",
+        job_id=_job_enq_id,
+        job_name=_job_name,
         todo_detail=todo_detail
     )
     
@@ -157,7 +173,7 @@ def enqueue_todo_job(job_creation_time, schedule_time, todo_detail):
         job_kwargs_serializable = str(job.kwargs)
 
     job_data = {
-        "job_id": job.id,
+        "job_id": _job_enq_id,
         "job_name": job.func_name, # This will be 'workflowbuild.schedule.utils.send_email'
         "timeout": job.timeout,
         "job_created": job_creation_time, # Ensure datetime is serialized
