@@ -1,0 +1,167 @@
+{
+ "actions": [],
+ "autoname": "prompt",
+ "creation": "2025-06-22 23:40:56.141195",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "job_id",
+  "job_name",
+  "job_function",
+  "job_created_at",
+  "job_scheduled_at",
+  "status",
+  "column_break_sssn",
+  "lead_id",
+  "lead_name",
+  "lead_email",
+  "lead_mobile_no",
+  "column_break_lfke",
+  "exception",
+  "arguments"
+ ],
+ "fields": [
+  {
+   "fieldname": "job_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Job Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_function",
+   "fieldtype": "Data",
+   "label": "Job Function",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_created_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Job Created At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "job_scheduled_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Job Scheduled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Scheduled\nStarted\nFinished\nFailed\nCancelled"
+  },
+  {
+   "fieldname": "column_break_sssn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lead_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Lead Id",
+   "options": "Lead",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead_id.title",
+   "fieldname": "lead_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Lead name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead_id.email_id",
+   "fieldname": "lead_email",
+   "fieldtype": "Data",
+   "label": "Lead Email",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead_id.mobile_no",
+   "fieldname": "lead_mobile_no",
+   "fieldtype": "Data",
+   "label": "Lead Mobile No.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_lfke",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "exception",
+   "fieldtype": "Small Text",
+   "label": "Exception"
+  },
+  {
+   "fieldname": "arguments",
+   "fieldtype": "Small Text",
+   "label": "Arguments"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-24 04:20:32.744355",
+ "modified_by": "Administrator",
+ "module": "Workflowbuild",
+ "name": "Future Scheduled Job",
+ "naming_rule": "Set by user",
+ "owner": "tommy112@yopmail.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [
+  {
+   "color": "Gray",
+   "title": "Scheduled"
+  },
+  {
+   "color": "Blue",
+   "title": "Started"
+  },
+  {
+   "color": "Green",
+   "title": "Finished"
+  },
+  {
+   "color": "Red",
+   "title": "Failed"
+  },
+  {
+   "color": "Orange",
+   "title": "Cancelled"
+  }
+ ],
+ "title_field": "job_id"
+}
