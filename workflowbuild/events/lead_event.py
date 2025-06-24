@@ -1,11 +1,13 @@
 import frappe
 from workflowbuild.schedule.execute_action import check_trigger_event
+frappe.utils.logger.set_log_level("DEBUG")
+logger = frappe.logger("workflow_lead_event", allow_site=True, file_count=50)
 
 def after_save_all(doc, method):
     try:
-        current_state = doc.status
-        status_changed = doc.has_value_changed("status")
-        frappe.log(f"Current status: {current_state}\nStatus changed: {status_changed}\n")
+        current_state = doc.workflow_state
+        status_changed = doc.has_value_changed("workflow_state")
+        logger.info(f"Current status: {current_state}\nStatus changed: {status_changed}\n")
 
         print("\n\nCurrent status:", current_state)
         print("Status changed:", status_changed)
@@ -34,16 +36,16 @@ def after_save_all(doc, method):
                 try:
                     res = check_trigger_event(workflow_actions_data, doc_dict)
                     if res:
-                        frappe.log(f"Trigger Event API Response: {res}")
+                        logger.info(f"Trigger Event API Response: {res}")
                     else:
-                        frappe.log("No response from Trigger Event API")
+                        logger.info("No response from Trigger Event API")
                 except Exception as e:
                     frappe.log_error(frappe.get_traceback(), "Trigger Event API Error: " + str(e))
             else:
-                frappe.log("No matching Workflow Configuration found for current status.")
+                logger.info("No matching Workflow Configuration found for current status.")
                 print("No matching Workflow Configuration found for current status.\n\n")
         else:
-            frappe.log("Workflow name or status change not detected.")
+            logger.info("Workflow name or status change not detected.")
             print("Workflow name or status change not detected.\n\n")
 
     except Exception as main_e:
