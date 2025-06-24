@@ -7,9 +7,9 @@ def after_save_all(doc, method):
     try:
         current_state = doc.workflow_state
         status_changed = doc.has_value_changed("workflow_state")
-        logger.info(f"Current status: {current_state}\nStatus changed: {status_changed}\n")
+        logger.info(f"\n\nCurrent status: {current_state}\nStatus changed: {status_changed}\n\n")
 
-        print("\n\nCurrent status:", current_state)
+        print("Current status:", current_state)
         print("Status changed:", status_changed)
 
         if status_changed:
