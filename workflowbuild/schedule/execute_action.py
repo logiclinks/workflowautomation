@@ -13,9 +13,11 @@ import logging
 from .delayed_tasks import backgroundScheduler, enqueue_email_job, enqueue_sms_job, enqueue_todo_job, FrappeJobEncoder
 from .utils import send_email
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(logging.StreamHandler())  # Optional: only for dev or Docker logs
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+# logger.addHandler(logging.StreamHandler())  # Optional: only for dev or Docker logs
+frappe.utils.logger.set_log_level("DEBUG")
+logger = frappe.logger("execute_actions", allow_site=True, file_count=50)
 
 def get_job_name_and_func(job_name):
     if 'email_job' in job_name:
