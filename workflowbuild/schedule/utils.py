@@ -11,9 +11,11 @@ from datetime import timedelta
 from frappe.core.doctype.sms_settings.sms_settings import send_sms
 import redis
 
+from twilio_settings.actions.utils import _send_sms_twilio
+
 # change this in production
-# redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
-redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
+# redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
 redis_conn = redis.from_url(redis_url)
 
 def send_email(email_detail):
@@ -74,7 +76,7 @@ def sends_sms_here(sms_detail):
         if not sms_temp or not doc.get('mobile_no'):
             raise ValueError("Missing mobile number or SMS template")
 
-        recipient = '+1' + str(doc.get('mobile_no'))
+        recipient = str(doc.get('mobile_no'))
 
         # Render the SMS message template
         message_template = frappe.db.get_value("SMS Template", sms_temp, "template_text")
@@ -82,7 +84,10 @@ def sends_sms_here(sms_detail):
             raise ValueError("SMS template not found")
 
         message = frappe.render_template(message_template, doc)
-        send_sms([recipient], message, sender_name="LogicLinks.io")
+
+        res = _send_sms_twilio(recipient, message, doc)
+        frappe.log(f"\n{res=}")
+        # send_sms([recipient], message, sender_name="LogicLinks.io")
         frappe.log(f"\n\nSMS SENT on {doc.get('mobile_no')}")
 
         # Fetch job status and log it

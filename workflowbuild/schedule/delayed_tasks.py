@@ -91,8 +91,8 @@ def enqueue_email_job(job_creation_time, schedule_time, email_detail, _job_name,
     return
 
 def enqueue_sms_job(job_creation_time, schedule_time, sms_detail, _job_name, _job_enq_id):
-    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
-    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
+    SITE_NAME=os.environ.get("SITES", "logic.localhost")
+    # SITE_NAME=os.environ.get("SITES", "logiclinks.io")
 
     try:
         frappe.init(site=SITE_NAME)

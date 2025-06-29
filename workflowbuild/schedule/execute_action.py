@@ -1,6 +1,6 @@
 import frappe
 from frappe.model.document import Document 
-
+from frappe.utils import now_datetime
 from datetime import timedelta, datetime
 from rq import Queue
 from redis import Redis
@@ -37,8 +37,8 @@ def check_trigger_event(workflow_actions, doc):
         # logger.info(f"Current Path: {os.getcwd()=}")
         
         # change this in production
-        # redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
-        redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+        redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
+        # redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
         # logger.info(f"{redis_url=}")
 
         if not redis_url:
@@ -101,7 +101,6 @@ def check_trigger_event(workflow_actions, doc):
                 # -----------------------------------------------
 
             elif action_type == "ToDO":
-                
                 todo_template = frappe.get_doc("ToDo Template", action.get("todo_template"))
                 todo_detail = {
                     "todo_temp": todo_template,
