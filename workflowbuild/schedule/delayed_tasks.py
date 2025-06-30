@@ -44,8 +44,7 @@ class FrappeJobEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 def enqueue_email_job(job_creation_time, schedule_time, email_detail, _job_name, _job_enq_id):
-    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
-    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
+    SITE_NAME=os.environ.get("SITES", "logic.localhost")
 
     try:
         frappe.init(site=SITE_NAME)
@@ -92,7 +91,6 @@ def enqueue_email_job(job_creation_time, schedule_time, email_detail, _job_name,
 
 def enqueue_sms_job(job_creation_time, schedule_time, sms_detail, _job_name, _job_enq_id):
     SITE_NAME=os.environ.get("SITES", "logic.localhost")
-    # SITE_NAME=os.environ.get("SITES", "logiclinks.io")
 
     try:
         frappe.init(site=SITE_NAME)
@@ -138,8 +136,7 @@ def enqueue_sms_job(job_creation_time, schedule_time, sms_detail, _job_name, _jo
     return
 
 def enqueue_todo_job(job_creation_time, schedule_time, todo_detail, _job_name, _job_enq_id):
-    # SITE_NAME=os.environ.get("SITES", "logic.localhost")
-    SITE_NAME=os.environ.get("SITES", "logiclinks.io")
+    SITE_NAME=os.environ.get("SITES", "logic.localhost")
 
     try:
         frappe.init(site=SITE_NAME)

@@ -38,8 +38,6 @@ def check_trigger_event(workflow_actions, doc):
         
         # change this in production
         redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
-        # redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
-        # logger.info(f"{redis_url=}")
 
         if not redis_url:
             logger.error("REDIS_QUEUE environment variable not set")
