@@ -13,9 +13,7 @@ import redis
 
 from twilio_settings.actions.utils import _send_sms_twilio
 
-# change this in production
-redis_url = os.environ.get("REDIS_QUEUE", "redis://127.0.0.1:11000")
-# redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
+redis_url = os.environ.get("REDIS_QUEUE", "redis://redis-queue:6379")
 redis_conn = redis.from_url(redis_url)
 
 def send_email(email_detail):

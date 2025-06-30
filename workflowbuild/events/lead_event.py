@@ -5,11 +5,8 @@ logger = frappe.logger("workflow_lead_event", allow_site=True, file_count=50)
 
 def after_save_all(doc, method):
     try:
-        # current_state = doc.workflow_state
-        # status_changed = doc.has_value_changed("workflow_state")
-        
-        current_state = doc.status
-        status_changed = doc.has_value_changed("status")
+        current_state = doc.workflow_state
+        status_changed = doc.has_value_changed("workflow_state")
         
         logger.info(f"\n\nCurrent status: {current_state}\nStatus changed: {status_changed}\n\n")
 
