@@ -61,16 +61,15 @@ def update_scheduled_job(job_id, status=None, started_at=None, error_msg=None):
 
 
 def update_future_jobs(_job_id, status, error_msg=None):
-    
+
     try:
         job_doc = frappe.get_doc("Future Scheduled Job", _job_id)
 
         if status is not None:
             job_doc.status = status
-        
+
         if error_msg is not None:
             job_doc.exception = error_msg
-        
 
         job_doc.save(ignore_permissions=True)
         frappe.db.commit()
